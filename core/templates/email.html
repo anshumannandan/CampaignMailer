@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAMPAIGN EMAIL</title>
+</head>
+<body>
+    <div style="font-family: Helvetica,Arial,sans-serif;min-width:1000px;overflow:auto;line-height:2">
+        <p style="font-size:1.1em">Here are latest Campaigns</p>
+
+        {% for campaign in campaigns %}
+            {{campaign.preview_text}}
+            <p>Follow this <a href={{campaign.article_url}}>url</a> for article.</p>
+            {{campaign.html_content|safe}}
+            <p>{{campaign.plain_text_content}}</p>
+            <p>Published on {{campaign.published_date}}</p>
+            <hr style="border:none;border-top:1px solid rgb(100, 100, 100)" /> 
+        {% endfor %}
+    
+        <p>Thank you for subscribing to us.</p>
+        <p>To unsubscribe click <a href={{unsubscribe_url}}>here</a>.</p>
+    </div>
+</body>
+</html>
