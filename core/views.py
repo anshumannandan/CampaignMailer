@@ -1,9 +1,11 @@
-from rest_framework import views, generics, response
+from rest_framework import views, generics, response, status
 from . models import User, Campaign
-from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
-from django.template.loader import render_to_string
-import threading 
+from . serializers import SubscriberSerializer
+from . utils import parallel_emails, CustomError
+
+
+class SubscribeView(generics.CreateAPIView):
+    serializer_class = SubscriberSerializer
 
 
 class UnsubscribeView(generics.UpdateAPIView):
@@ -20,39 +22,20 @@ class UnsubscribeView(generics.UpdateAPIView):
         return response.Response({'message' : f'{instance.email} has been unsubscribed'})
     
 
-def send_campaign_email(request, campaign, user):
-
-    context = {
-        'user' : user.first_name,
-        'campaign' : campaign,
-        'unsubscribe_url' : f'http://{request.get_host()}/core/unsub/{user.id}/'
-    }
-    html_content = render_to_string('email.html', context)
-    email = EmailMultiAlternatives(
-        campaign.subject,
-        campaign.plain_text_content,
-        settings.EMAIL_HOST_USER,
-        [user.email]
-    )
-    email.attach_alternative(html_content, 'text/html')
-    email.send()
-
-
 class SendEmailView(views.APIView):
+    querset = Campaign.objects.filter(active = True)
     
     def post(self, request, *args, **kwargs):
 
         campaign = request.GET.get('campaign')
         if campaign is None:
-            campaign = Campaign.objects.filter(active=True).first()
+            campaign = self.querset.first()
+        else:
+            try:
+                campaign = self.querset.get(id = campaign)
+            except Campaign.DoesNotExist:
+                raise CustomError(error='invalid campaign id', code=status.HTTP_404_NOT_FOUND)
 
-        threads = []
-        for user in User.objects.filter(is_active=True):
-            thread = threading.Thread(target=send_campaign_email, args=(request, campaign, user))
-            threads.append(thread)
-            thread.start()
-
-        for thread in threads:
-            thread.join()
-
+        users = User.objects.filter(is_active=True)
+        parallel_emails(request, campaign, users)
         return response.Response({'message' : 'Campaign Emails sent to all active users'})
