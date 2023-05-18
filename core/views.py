@@ -1,8 +1,9 @@
-from rest_framework import generics, response
+from rest_framework import views, generics, response
 from . models import User, Campaign
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
+import threading 
 
 
 class UnsubscribeView(generics.UpdateAPIView):
@@ -35,3 +36,23 @@ def send_campaign_email(request, campaign, user):
     )
     email.attach_alternative(html_content, 'text/html')
     email.send()
+
+
+class SendEmailView(views.APIView):
+    
+    def post(self, request, *args, **kwargs):
+
+        campaign = request.GET.get('campaign')
+        if campaign is None:
+            campaign = Campaign.objects.filter(active=True).first()
+
+        threads = []
+        for user in User.objects.filter(is_active=True):
+            thread = threading.Thread(target=send_campaign_email, args=(request, campaign, user))
+            threads.append(thread)
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+
+        return response.Response({'message' : 'Campaign Emails sent to all active users'})
