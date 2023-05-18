@@ -3,7 +3,6 @@ from . models import User, Campaign
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 
 
 class UnsubscribeView(generics.UpdateAPIView):
@@ -20,21 +19,19 @@ class UnsubscribeView(generics.UpdateAPIView):
         return response.Response({'message' : f'{instance.email} has been unsubscribed'})
     
 
+def send_campaign_email(request, campaign, user):
 
-def send_campaign_email(request):
     context = {
-        'campaigns' : Campaign.objects.all(),
-        'unsubscribe_url' : f'http://{request.get_host()}/core/unsub/{2}/'
+        'user' : user.first_name,
+        'campaign' : campaign,
+        'unsubscribe_url' : f'http://{request.get_host()}/core/unsub/{user.id}/'
     }
     html_content = render_to_string('email.html', context)
-    plain_text_content = strip_tags(html_content)
-
     email = EmailMultiAlternatives(
-        'Subject',
-        plain_text_content,
+        campaign.subject,
+        campaign.plain_text_content,
         settings.EMAIL_HOST_USER,
-        ['anshumannandan2003@gmail.com']
+        [user.email]
     )
-
     email.attach_alternative(html_content, 'text/html')
     email.send()
