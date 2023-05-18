@@ -1,11 +1,16 @@
-from rest_framework import views, generics, response, status
+from rest_framework import views, generics, response, status, permissions
 from . models import User, Campaign
-from . serializers import SubscriberSerializer
+from . serializers import SubscriberSerializer, CampaignSerializer
 from . utils import parallel_emails, CustomError
 
 
 class SubscribeView(generics.CreateAPIView):
     serializer_class = SubscriberSerializer
+
+
+class AddCampaignView(generics.CreateAPIView):
+    permission_classes = [permissions.IsAdminUser]
+    serializer_class = CampaignSerializer
 
 
 class UnsubscribeView(generics.UpdateAPIView):
@@ -23,6 +28,7 @@ class UnsubscribeView(generics.UpdateAPIView):
     
 
 class SendEmailView(views.APIView):
+    permission_classes = [permissions.IsAdminUser]
     querset = Campaign.objects.filter(active = True)
     
     def post(self, request, *args, **kwargs):

@@ -10,3 +10,10 @@ class SubscriberSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)
+    
+
+class CampaignSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Campaign
+        fields = '__all__'
