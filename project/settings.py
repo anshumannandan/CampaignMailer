@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'core',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -144,3 +145,11 @@ EMAIL_PORT = os.environ.get('EMAIL_PORT', int)
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', bool)
+
+# celery -A project.celery worker --pool=solo -l info
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379'
+accept_content = ['application/json']
+result_serializer = 'json'
+task_serializer = 'json'
+timezone = 'Asia/Kolkata'
+result_backend = 'django-db'

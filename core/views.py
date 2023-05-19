@@ -1,7 +1,8 @@
 from rest_framework import views, generics, response, status, permissions
 from . models import User, Campaign
 from . serializers import SubscriberSerializer, CampaignSerializer
-from . utils import parallel_emails, CustomError
+from . tasks import send_campaign_email
+from celery import group
 
 
 class SubscribeView(generics.CreateAPIView):
@@ -29,19 +30,23 @@ class UnsubscribeView(generics.UpdateAPIView):
 
 class SendEmailView(views.APIView):
     permission_classes = [permissions.IsAdminUser]
-    querset = Campaign.objects.filter(active = True)
+    queryset = Campaign.objects.filter(active = True)
     
     def post(self, request, *args, **kwargs):
 
         campaign = request.GET.get('campaign')
         if campaign is None:
-            campaign = self.querset.first()
+            campaign = self.queryset.first()
         else:
             try:
-                campaign = self.querset.get(id = campaign)
+                campaign = self.queryset.get(id = campaign)
             except Campaign.DoesNotExist:
-                raise CustomError(error='invalid campaign id', code=status.HTTP_404_NOT_FOUND)
+                return response.Response({'message' : 'Invalid Campaign ID'}, status=status.HTTP_404_NOT_FOUND)
 
         users = User.objects.filter(is_active=True)
-        parallel_emails(request, campaign, users)
+        host_url = request.get_host()
+        campaign = CampaignSerializer(campaign).data
+
+        group(send_campaign_email.s(host_url, campaign, SubscriberSerializer(user).data) for user in users).apply_async()
+
         return response.Response({'message' : 'Campaign Emails sent to all active users'})
