@@ -1,6 +1,5 @@
 from django.contrib import admin
-from .models import User, Campaign
+from .models import Campaign
 
 
-admin.site.register(User)
 admin.site.register(Campaign)

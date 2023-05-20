@@ -1,8 +1,7 @@
 from rest_framework import views, generics, response, status, permissions
-from . models import User, Campaign
+from . models import User
 from . serializers import SubscriberSerializer, CampaignSerializer
 from . utils import assign_task_to_celery, validate_and_return_campaign
-from django.db.models.signals import post_save
 
 
 class SubscribeView(generics.CreateAPIView):
