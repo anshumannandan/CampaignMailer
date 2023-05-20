@@ -112,7 +112,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kolkata'
 
 USE_I18N = True
 
@@ -153,3 +153,5 @@ result_serializer = 'json'
 task_serializer = 'json'
 timezone = 'Asia/Kolkata'
 result_backend = 'django-db'
+
+DEFAULT_DOMAIN = 'http://127.0.0.1:8000/'

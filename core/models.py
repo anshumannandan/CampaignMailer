@@ -51,6 +51,7 @@ class Campaign(models.Model):
     plain_text_content = models.TextField()
     published_date = models.DateField(auto_now_add=True)
     active = models.BooleanField(default=True)
+    schedule_for = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-published_date']

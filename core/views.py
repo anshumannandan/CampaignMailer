@@ -1,8 +1,8 @@
 from rest_framework import views, generics, response, status, permissions
 from . models import User, Campaign
 from . serializers import SubscriberSerializer, CampaignSerializer
-from . tasks import send_campaign_email
-from celery import group
+from . utils import assign_task_to_celery, validate_and_return_campaign
+from django.db.models.signals import post_save
 
 
 class SubscribeView(generics.CreateAPIView):
@@ -30,23 +30,10 @@ class UnsubscribeView(generics.UpdateAPIView):
 
 class SendEmailView(views.APIView):
     permission_classes = [permissions.IsAdminUser]
-    queryset = Campaign.objects.filter(active = True)
     
     def post(self, request, *args, **kwargs):
-
-        campaign = request.GET.get('campaign')
+        campaign = validate_and_return_campaign(request)  
         if campaign is None:
-            campaign = self.queryset.first()
-        else:
-            try:
-                campaign = self.queryset.get(id = campaign)
-            except Campaign.DoesNotExist:
-                return response.Response({'message' : 'Invalid Campaign ID'}, status=status.HTTP_404_NOT_FOUND)
-
-        users = User.objects.filter(is_active=True)
-        host_url = request.get_host()
-        campaign = CampaignSerializer(campaign).data
-
-        group(send_campaign_email.s(host_url, campaign, SubscriberSerializer(user).data) for user in users).apply_async()
-
+            return response.Response({'message' : 'Invalid Campaign ID'}, status=status.HTTP_404_NOT_FOUND)       
+        assign_task_to_celery(campaign)
         return response.Response({'message' : 'Campaign Emails sent to all active users'})
